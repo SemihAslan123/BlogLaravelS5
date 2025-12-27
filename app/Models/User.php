@@ -21,7 +21,20 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role',
     ];
+
+    public function articles(){
+        return $this->hasMany(Article::class);
+    }
+
+    public function comments(){
+        return $this->hasMany(Comment::class);
+    }
+
+    public function editorRequest(){
+        return $this->hasOne(EditorRequest::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.
