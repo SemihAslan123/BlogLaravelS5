@@ -2,63 +2,73 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Comment;
+use App\Models\Article;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class CommentController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Ajouter un commentaire sur un article
      */
-    public function index()
+    public function store(Request $request, Article $article)
     {
-        //
+        $validated = $request->validate([
+            'content' => 'required|string|min:3|max:1000',
+        ], [
+            'content.required' => 'Le commentaire ne peut pas être vide.',
+            'content.min' => 'Le commentaire doit contenir au moins 3 caractères.',
+            'content.max' => 'Le commentaire ne peut pas dépasser 1000 caractères.',
+        ]);
+
+        Comment::create([
+            'content' => $validated['content'],
+            'user_id' => Auth::id(),
+            'article_id' => $article->id,
+        ]);
+
+        return back()->with('success', 'Commentaire ajouté avec succès !');
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Mettre à jour un commentaire
      */
-    public function create()
+    public function update(Request $request, Comment $comment)
     {
-        //
+        // Vérifier que l'utilisateur peut modifier ce commentaire
+        if (Gate::denies('update-comment', $comment)) {
+            abort(403, 'Vous ne pouvez pas modifier ce commentaire.');
+        }
+
+        $validated = $request->validate([
+            'content' => 'required|string|min:3|max:1000',
+        ], [
+            'content.required' => 'Le commentaire ne peut pas être vide.',
+            'content.min' => 'Le commentaire doit contenir au moins 3 caractères.',
+            'content.max' => 'Le commentaire ne peut pas dépasser 1000 caractères.',
+        ]);
+
+        $comment->update([
+            'content' => $validated['content'],
+        ]);
+
+        return back()->with('success', 'Commentaire modifié avec succès !');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Supprimer un commentaire (son auteur uniquement)
      */
-    public function store(Request $request)
+    public function destroy(Comment $comment)
     {
-        //
-    }
+        // Vérifier que l'utilisateur peut supprimer ce commentaire
+        if (Gate::denies('delete-comment', $comment)) {
+            abort(403, 'Vous ne pouvez pas supprimer ce commentaire.');
+        }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $comment->delete();
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return back()->with('success', 'Commentaire supprimé avec succès !');
     }
 }
