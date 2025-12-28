@@ -37,54 +37,22 @@ class ArticleController extends Controller
     public function show(Article $article)
     {
         // Charger l'article avec ses relations
-        $article->load([
-            'user',
-            'category',
-            'tags',
-            'comments.user'
-        ]);
-
-        return view('articles.show', compact('article'));
     }
 
     /**
-     * Articles par catégorie
+     * Filtrage articles par catégorie
      */
     public function byCategory(Category $category)
     {
-        $articles = $category->articles()
-            ->with(['user', 'category', 'tags'])
-            ->withCount('comments')
-            ->latest()
-            ->paginate(12);
 
-        $categories = Category::all();
-        $popularTags = Tag::withCount('articles')
-            ->orderBy('articles_count', 'desc')
-            ->take(10)
-            ->get();
-
-        return view('articles.index', compact('articles', 'categories', 'popularTags', 'category'));
     }
 
     /**
-     * Articles par tag
+     * Filtrage articles par tag
      */
     public function byTag(Tag $tag)
     {
-        $articles = $tag->articles()
-            ->with(['user', 'category', 'tags'])
-            ->withCount('comments')
-            ->latest()
-            ->paginate(12);
 
-        $categories = Category::all();
-        $popularTags = Tag::withCount('articles')
-            ->orderBy('articles_count', 'desc')
-            ->take(10)
-            ->get();
-
-        return view('articles.index', compact('articles', 'categories', 'popularTags', 'tag'));
     }
 
     /**
@@ -92,14 +60,8 @@ class ArticleController extends Controller
      */
     public function create()
     {
-        if (Gate::denies('create-article')) {
-            abort(403, 'Accès non autorisé');
-        }
+        // Vérifier l'autorisation
 
-        $categories = Category::all();
-        $tags = Tag::all();
-
-        return view('articles.create', compact('categories', 'tags'));
     }
 
     /**
@@ -107,10 +69,12 @@ class ArticleController extends Controller
      */
     public function store(Request $request)
     {
+        // Vérifier l'autorisation
         if (Gate::denies('create-article')) {
             abort(403);
         }
 
+        // Valider les données
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -121,26 +85,11 @@ class ArticleController extends Controller
         ]);
 
         // Gérer l'upload de l'image
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('articles', 'public');
-        }
 
         // Créer l'article
-        $article = Article::create([
-            'title' => $validated['title'],
-            'content' => $validated['content'],
-            'category_id' => $validated['category_id'],
-            'user_id' => Auth::id(),
-            'image_path' => $imagePath,
-        ]);
 
         // Attacher les tags
-        if (!empty($validated['tags'])) {
-            $article->tags()->attach($validated['tags']);
-        }
 
-        return redirect()->route('editor.dashboard')->with('success', 'Article créé avec succès !');
     }
 
     /**
@@ -148,14 +97,7 @@ class ArticleController extends Controller
      */
     public function edit(Article $article)
     {
-        if (Gate::denies('update-article', $article)) {
-            abort(403);
-        }
 
-        $categories = Category::all();
-        $tags = Tag::all();
-
-        return view('articles.edit', compact('article', 'categories', 'tags'));
     }
 
     /**
@@ -163,44 +105,7 @@ class ArticleController extends Controller
      */
     public function update(Request $request, Article $article)
     {
-        if (Gate::denies('update-article', $article)) {
-            abort(403);
-        }
-
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'category_id' => 'required|exists:categories,id',
-            'tags' => 'nullable|array',
-            'tags.*' => 'exists:tags,id',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-        ]);
-
-        // Gérer l'upload de l'image
-        if ($request->hasFile('image')) {
-            // Supprimer l'ancienne image si elle existe
-            if ($article->image_path) {
-                \Storage::disk('public')->delete($article->image_path);
-            }
-            $imagePath = $request->file('image')->store('articles', 'public');
-            $article->image_path = $imagePath;
-        }
-
-        // Mettre à jour l'article
-        $article->update([
-            'title' => $validated['title'],
-            'content' => $validated['content'],
-            'category_id' => $validated['category_id'],
-        ]);
-
-        // Synchroniser les tags
-        if (isset($validated['tags'])) {
-            $article->tags()->sync($validated['tags']);
-        } else {
-            $article->tags()->detach();
-        }
-
-        return redirect()->route('editor.dashboard')->with('success', 'Article modifié avec succès !');
+        // Vérifier l'autorisation
     }
 
     /**
@@ -208,17 +113,6 @@ class ArticleController extends Controller
      */
     public function destroy(Article $article)
     {
-        if (Gate::denies('delete-article', $article)) {
-            abort(403);
-        }
-
-        // Supprimer l'image si elle existe
-        if ($article->image_path) {
-            \Storage::disk('public')->delete($article->image_path);
-        }
-
-        $article->delete();
-
-        return redirect()->route('editor.dashboard')->with('success', 'Article supprimé avec succès !');
+        // Vérifier l'autorisation
     }
 }
