@@ -6,6 +6,8 @@ use App\Http\Controllers\CommentController;
 use App\Http\Controllers\EditorRequestController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Comment;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,11 +21,11 @@ Route::get('/', [ArticleController::class, 'index'])->name('home');
 // Afficher un article en détail
 Route::get('/articles/{article}', [ArticleController::class, 'show'])->name('articles.show');
 
-// Filtrer les articles par catégorie
-Route::get('/category/{category:slug}', [ArticleController::class, 'byCategory'])->name('articles.by-category');
+// Filtrer les articles par catégorie (désactiver pour permettre un filtrage multiple)
+//Route::get('/category/{category:slug}', [ArticleController::class, 'byCategory'])->name('articles.by-category');
 
-// Filtrer les articles par tag
-Route::get('/tag/{tag:slug}', [ArticleController::class, 'byTag'])->name('articles.by-tag');
+// Filtrer les articles par tag (désactiver pour permettre un filtrage multiple)
+//Route::get('/tag/{tag:slug}', [ArticleController::class, 'byTag'])->name('articles.by-tag');
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +42,12 @@ Route::middleware('auth')->group(function () {
 
     // Commentaires sur les articles
     Route::post('/articles/{article}/comments', [CommentController::class, 'store'])->name('comments.store');
+    Route::get('/comments/{comment}/edit', function (Comment $comment) {
+        if (Auth::id() !== $comment->user_id) {
+            abort(403);
+        }
+        return view('comments.edit', compact('comment'));
+    })->name('comments.edit');
     Route::put('/comments/{comment}', [CommentController::class, 'update'])->name('comments.update');
     Route::delete('/comments/{comment}', [CommentController::class, 'destroy'])->name('comments.destroy');
 

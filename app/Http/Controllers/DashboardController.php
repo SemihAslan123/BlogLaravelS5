@@ -17,7 +17,9 @@ class DashboardController extends Controller
      */
     public function editorDashboard()
     {
-
+        // récupère les articles de l'utilisateur connecté, triés par le plus récent
+        $articles = Auth::user()->articles()->latest()->get();
+        return view('dashboard.editor', compact('articles'));
     }
 
     /**
@@ -25,7 +27,9 @@ class DashboardController extends Controller
      */
     public function adminDashboard()
     {
-
+        // récupère uniquement les demandes en attente ('pending')
+        $requests = EditorRequest::where('status', 'pending')->with('user')->get();
+        return view('dashboard.admin', compact('requests'));
     }
 
     /**
@@ -33,7 +37,9 @@ class DashboardController extends Controller
      */
     public function users()
     {
-
+        // récupère tout les utilisateurs
+        $users = User::all();
+        return view('admin.users', compact('users'));
     }
 
     /**
@@ -41,6 +47,12 @@ class DashboardController extends Controller
      */
     public function deleteUser(User $user)
     {
-        
+        // éviter que l'admin se supprimer lui-même par sécurité
+        if ($user->id === Auth::id()) {
+            return back()->with('error', 'Vous ne pouvez pas supprimer votre propre compte.');
+        }
+
+        $user->delete();
+        return back()->with('success', 'Utilisateur supprimé avec succès.');
     }
 }

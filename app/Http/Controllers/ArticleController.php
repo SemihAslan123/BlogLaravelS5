@@ -15,17 +15,33 @@ class ArticleController extends Controller
     /**
      * Page d'accueil - Liste de tous les articles
      */
-    public function index()
+    public function index(Request $request)
     {
-        $articles = Article::with(['user', 'category', 'tags'])
+        $query = Article::with(['user', 'category', 'tags'])
             ->withCount('comments')
-            ->latest()
-            ->paginate(12);
+            ->latest();
 
+        // filtrage par catégories (filtrage multiple)
+        if ($request->has('categories') && is_array($request->categories)) {
+            $query->whereHas('category', function ($q) use ($request) {
+                $q->whereIn('slug', $request->categories);
+            });
+        }
+
+        // filtrage par tags (filtrage multiple)
+        if ($request->has('tags') && is_array($request->tags)) {
+            $query->whereHas('tags', function ($q) use ($request) {
+                $q->whereIn('slug', $request->tags);
+            });
+        }
+
+        $articles = $query->paginate(12)->withQueryString(); // Garde les filtres lors de la pagination
+
+        // données pour la sidebar
         $categories = Category::all();
         $popularTags = Tag::withCount('articles')
             ->orderBy('articles_count', 'desc')
-            ->take(10)
+            ->take(20)
             ->get();
 
         return view('articles.index', compact('articles', 'categories', 'popularTags'));
@@ -49,8 +65,9 @@ class ArticleController extends Controller
 
     /**
      * Articles par catégorie
+     * désactivé pour filtrage multiple
      */
-    public function byCategory(Category $category)
+    /*public function byCategory(Category $category)
     {
         $articles = $category->articles()
             ->with(['user', 'category', 'tags'])
@@ -65,12 +82,13 @@ class ArticleController extends Controller
             ->get();
 
         return view('articles.index', compact('articles', 'categories', 'popularTags', 'category'));
-    }
+    }*/
 
     /**
      * Articles par tag
+     * désactivé pour filtrage multiple
      */
-    public function byTag(Tag $tag)
+    /*public function byTag(Tag $tag)
     {
         $articles = $tag->articles()
             ->with(['user', 'category', 'tags'])
@@ -85,7 +103,7 @@ class ArticleController extends Controller
             ->get();
 
         return view('articles.index', compact('articles', 'categories', 'popularTags', 'tag'));
-    }
+    }*/
 
     /**
      * Formulaire de création d'article (éditeur uniquement)

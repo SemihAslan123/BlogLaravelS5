@@ -14,6 +14,17 @@ class EditorRequestController extends Controller
      */
     public function store(Request $request)
     {
+        // vérifié si l'user à déjà une demande en cours
+        $existingRequest = Auth::user()->editorRequest;
+        if ($existingRequest && $existingRequest->status === 'pending') {
+            return back()->with('error', 'Vous avez déjà une demande en attente.');
+        }
+
+        EditorRequest::create([
+            'user_id' => Auth::id(),
+            'status' => 'pending'
+        ]);
+        return back()->with('success', 'Votre demande a été envoyée à l\'administrateur.');
 
     }
 
@@ -30,11 +41,14 @@ class EditorRequestController extends Controller
      */
     public function approve(EditorRequest $editorRequest)
     {
-        // Vérifier que la demande est en attente
+        // maj du statut de la demande
+        $editorRequest->update(['status' => 'approved']);
 
         // Changer le rôle de l'utilisateur
+        $user = $editorRequest->user;
+        $user->update(['role' => 'editor']);
 
-        // Mettre à jour le statut de la demande
+        return back()->with('success', 'Demande approuvée. L\'utilisateur est maintenant Rédacteur.');
     }
 
     /**
@@ -42,6 +56,9 @@ class EditorRequestController extends Controller
      */
     public function reject(EditorRequest $editorRequest)
     {
-        
+        // rejette la demande et met le statut de la demande en 'rejected'
+        $editorRequest->update(['status' => 'rejected']);
+        return back()->with('success', 'Demande refusée.');
+
     }
 }
