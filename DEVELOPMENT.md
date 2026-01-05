@@ -64,6 +64,15 @@ php artisan migrate:fresh --seed
 # Lien storage pour les images
 php artisan storage:link
 
+# Mise en production
+npm run build
+
+# Supprime le cache des routes
+php artisan route:clear
+
+# Vide le cache des templates Blade compilés
+php artisan view:clea
+
 # Lancer le serveur
 php artisan serve
 ```
