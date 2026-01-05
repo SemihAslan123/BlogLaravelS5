@@ -71,7 +71,7 @@ npm run build
 php artisan route:clear
 
 # Vide le cache des templates Blade compilés
-php artisan view:clea
+php artisan view:clear
 
 # Lancer le serveur
 php artisan serve
